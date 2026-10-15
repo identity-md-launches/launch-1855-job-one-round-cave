@@ -1,0 +1,1 @@
+[{"type":"function","name":"transfer","inputs":[{"name":"recipient","type":"address"},{"name":"amount","type":"uint"}],"outputs":[{"name":"ok","type":"bool"}]}]

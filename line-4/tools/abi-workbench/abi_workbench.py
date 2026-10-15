@@ -15,9 +15,10 @@ def rol(x, n):
 def keccak256(data):
     rate = 136
     padded = bytearray(data)
-    padded.append(0x01)
-    padded.extend(b'\0' * ((rate - len(padded) % rate - 1) % rate))
-    padded.append(0x80)
+    padding = rate - len(padded) % rate
+    padded.extend(b'\0' * padding)
+    padded[-padding] = 0x01
+    padded[-1] |= 0x80
     a = [0] * 25
     for off in range(0, len(padded), rate):
         block = padded[off:off + rate]
@@ -42,7 +43,7 @@ def canonical(param):
         raise ValueError('tuple types are not supported in this compact tool')
     if not re.fullmatch(r'(address|bool|string|bytes|bytes(?:[1-9]|[12][0-9]|3[0-2])|u?int(?:8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?)', t):
         raise ValueError(f'unsupported ABI type: {t!r}')
-    return t
+    return {'uint': 'uint256', 'int': 'int256'}.get(t, t)
 
 def dynamic(t): return t in ('string', 'bytes')
 
@@ -51,6 +52,7 @@ def word(n):
     return n.to_bytes(32, 'big')
 
 def encode_value(t, value):
+    t = canonical({'type': t})
     if t == 'address':
         if not isinstance(value, str) or not re.fullmatch(r'0x[0-9a-fA-F]{40}', value): raise ValueError('address must be 0x followed by 40 hex digits')
         return bytes.fromhex(value[2:]).rjust(32, b'\0')
@@ -72,8 +74,12 @@ def encode_value(t, value):
         m = re.fullmatch(r'(u?int)([0-9]*)', t)
         if m:
             bits = int(m.group(2) or '256')
-            try: n = int(value)
-            except Exception: raise ValueError(f'{t} argument must be an integer')
+            if type(value) is int:
+                n = value
+            elif isinstance(value, str) and re.fullmatch(r'-?(?:0|[1-9][0-9]*)', value):
+                n = int(value)
+            else:
+                raise ValueError(f'{t} argument must be an integer or decimal integer string')
             signed = m.group(1) == 'int'
             lo, hi = (-(1 << (bits-1)), (1 << (bits-1))-1) if signed else (0, (1 << bits)-1)
             if not lo <= n <= hi: raise ValueError(f'{t} value is out of range')
@@ -102,22 +108,30 @@ def decode_tuple(params, data):
         w=data[pos:pos+32]
         if dynamic(t):
             off=int.from_bytes(w,'big')
-            if off%32 or off+32>len(data): raise ValueError('invalid dynamic return offset')
+            if off < 32 * len(params) or off%32 or off+32>len(data): raise ValueError('invalid dynamic return offset')
             n=int.from_bytes(data[off:off+32],'big'); raw=data[off+32:off+32+n]
-            if len(raw)!=n: raise ValueError('truncated dynamic return value')
+            end = off + 32 + n
+            padded_end = end + (-n) % 32
+            if len(raw)!=n or padded_end > len(data): raise ValueError('truncated dynamic return value')
+            if any(data[end:padded_end]): raise ValueError('nonzero dynamic return padding')
             val=raw.decode('utf-8') if t=='string' else '0x'+raw.hex()
-        elif t=='address': val='0x'+w[-20:].hex()
+        elif t=='address':
+            if any(w[:12]): raise ValueError('invalid high bits for address')
+            val='0x'+w[-20:].hex()
         elif t=='bool':
             n=int.from_bytes(w,'big')
             if n not in (0,1): raise ValueError('invalid encoded bool')
             val=bool(n)
         elif t.startswith('bytes') and t!='bytes':
-            n=int(t[5:]); val='0x'+w[:n].hex()
+            n=int(t[5:])
+            if any(w[n:]): raise ValueError(f'invalid padding for {t}')
+            val='0x'+w[:n].hex()
         else:
             signed=t.startswith('int'); bits=int(re.search(r'[0-9]+$',t).group(0)) if re.search(r'[0-9]+$',t) else 256
             n=int.from_bytes(w,'big')
             if signed and n & (1 << 255): n-=1 << 256
-            if not signed and n >= 1 << bits: raise ValueError(f'invalid high bits for {t}')
+            lo, hi = (-(1 << (bits-1)), (1 << (bits-1))-1) if signed else (0, (1 << bits)-1)
+            if not lo <= n <= hi: raise ValueError(f'invalid high bits or sign extension for {t}')
             val=n
         out.append({'name':p.get('name') or f'arg{i}', 'type':t, 'value':val})
     return out
