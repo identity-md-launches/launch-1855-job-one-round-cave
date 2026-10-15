@@ -1,0 +1,79 @@
+{
+  "schema": "token-read-plan/v1",
+  "chain_id": 1,
+  "block_number": "0x18fc1e6",
+  "requests": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd782bdea4ef02a0bd391eb9089470c8080f0a68e",
+          "data": "0x95d89b41"
+        },
+        "0x18fc1e6"
+      ]
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd782bdea4ef02a0bd391eb9089470c8080f0a68e",
+          "data": "0x313ce567"
+        },
+        "0x18fc1e6"
+      ]
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd782bdea4ef02a0bd391eb9089470c8080f0a68e",
+          "data": "0x18160ddd"
+        },
+        "0x18fc1e6"
+      ]
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 4,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+          "data": "0x95d89b41"
+        },
+        "0x18fc1e6"
+      ]
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 5,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+          "data": "0x313ce567"
+        },
+        "0x18fc1e6"
+      ]
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 6,
+      "method": "eth_call",
+      "params": [
+        {
+          "to": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+          "data": "0x18160ddd"
+        },
+        "0x18fc1e6"
+      ]
+    }
+  ]
+}

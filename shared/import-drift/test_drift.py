@@ -1,3 +1,4 @@
+import contextlib
 import csv
 import io
 from pathlib import Path
@@ -70,6 +71,42 @@ class DriftTests(unittest.TestCase):
         (self.root / 'pkg' / '__init__.py').write_text('import json\n')
         with self.assertRaisesRegex(ValueError, 'module name collision'):
             drift.snapshot(self.root)
+
+    def test_deep_source_chain_and_cycle_do_not_recurse(self):
+        count = 5000
+        for index in range(count):
+            source = f'import n{index + 1:05}\n' if index + 1 < count else ''
+            (self.root / f'n{index:05}.py').write_text(source, encoding='utf-8')
+        text, report = drift.snapshot(self.root)
+        self.assertEqual(report['summary']['module_count'], count)
+        self.assertEqual(report['summary']['local_edge_count'], count - 1)
+        self.assertEqual(report['cycles'], [])
+        self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), count)
+        (self.root / f'n{count - 1:05}.py').write_text('import n00000\n', encoding='utf-8')
+        _, report = drift.snapshot(self.root)
+        self.assertEqual(report['summary']['cycle_count'], 1)
+        self.assertEqual(len(report['cycles'][0]), count)
+
+    def test_text_comparison_preserves_status_and_explains_real_delta(self):
+        source = self.root / 'main.py'
+        source.write_text('import csv\n', encoding='utf-8')
+        before, _ = drift.snapshot(self.root)
+        source.write_text('import json\n', encoding='utf-8')
+        after, _ = drift.snapshot(self.root)
+        before_path = self.save('before.csv', before)
+        after_path = self.save('after.csv', after)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = drift.main(['compare', str(before_path), str(after_path),
+                               '--format', 'text'])
+        self.assertEqual(code, 1)
+        self.assertIn('1 changed', output.getvalue())
+        self.assertIn('external_imports:', output.getvalue())
+        self.assertIn('csv', output.getvalue())
+        self.assertIn('json', output.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(drift.main(['compare', str(before_path), str(before_path),
+                                         '--format', 'text']), 0)
 
 
 if __name__ == '__main__':

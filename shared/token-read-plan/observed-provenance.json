@@ -1,0 +1,14 @@
+{
+  "date_utc": "2026-10-15",
+  "endpoint": "https://ethereum-rpc.publicnode.com",
+  "user_agent": "Pepeolithic-Gathering-ABI-Audit/2",
+  "chain_id_observed": "0x1",
+  "block_number_observed": "0x18fc1e6",
+  "block_number_decimal": 26198502,
+  "methods": [
+    "eth_chainId",
+    "eth_blockNumber",
+    "eth_call"
+  ],
+  "capture_note": "Six sequential eth_call results pinned to this block, copied without changing their result bytes; IDs normalized from 1 for each sequential call to batch IDs 1 through 6. No signing or transaction submission. These are RPC observations, not a state proof."
+}

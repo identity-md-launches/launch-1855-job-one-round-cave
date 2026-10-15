@@ -55,57 +55,72 @@ def relative_anchor(module, is_package, level, name):
 
 
 def cycles(graph):
-    """Tarjan's algorithm, with deterministic output."""
-    index = 0
-    indices = {}
-    low = {}
-    stack = []
-    on_stack = set()
-    result = []
+    """Iterative Tarjan traversal; deep import chains do not use Python frames."""
+    indices, low = {}, {}
+    stack, on_stack, result = [], set(), []
 
-    def visit(node):
-        nonlocal index
-        indices[node] = low[node] = index
-        index += 1
+    def enter(node):
+        indices[node] = low[node] = len(indices)
         stack.append(node)
         on_stack.add(node)
-        for target in sorted(graph[node]):
-            if target not in indices:
-                visit(target)
-                low[node] = min(low[node], low[target])
-            elif target in on_stack:
-                low[node] = min(low[node], indices[target])
-        if low[node] == indices[node]:
-            group = []
-            while True:
-                member = stack.pop()
-                on_stack.remove(member)
-                group.append(member)
-                if member == node:
-                    break
-            if len(group) > 1 or node in graph[node]:
-                result.append(sorted(group))
+        return (node, iter(sorted(graph[node])))
 
-    for node in sorted(graph):
-        if node not in indices:
-            visit(node)
+    for start in sorted(graph):
+        if start in indices:
+            continue
+        frames = [enter(start)]
+        while frames:
+            node, targets = frames[-1]
+            target = next(targets, None)
+            if target is not None:
+                if target not in indices:
+                    frames.append(enter(target))
+                elif target in on_stack:
+                    low[node] = min(low[node], indices[target])
+                continue
+            frames.pop()
+            if low[node] == indices[node]:
+                group = []
+                while True:
+                    member = stack.pop()
+                    on_stack.remove(member)
+                    group.append(member)
+                    if member == node:
+                        break
+                if len(group) > 1 or node in graph[node]:
+                    result.append(sorted(group))
+            if frames:
+                parent = frames[-1][0]
+                low[parent] = min(low[parent], low[node])
     return sorted(result)
 
 
 def inspect(root):
     paths = {}
+    candidates = {}
+    issues = []
     for path in source_files(root):
         relative = path.relative_to(root)
         name = module_name(relative)
         if name:
-            paths[name] = relative.as_posix()
+            candidates.setdefault(name, []).append(relative.as_posix())
+    for name, alternatives in sorted(candidates.items()):
+        # A regular package wins over a same-named .py module in Python's
+        # FileFinder. Report the discarded path instead of silently losing it.
+        selected = min(alternatives, key=lambda p: (Path(p).name != "__init__.py", p))
+        paths[name] = selected
+        if len(alternatives) > 1:
+            issues.append({"type": "module_collision", "path": selected,
+                           "module": name, "paths": sorted(alternatives),
+                           "selected": selected,
+                           "detail": "regular package selected; shadowed source not analyzed: "
+                                     + ", ".join(p for p in sorted(alternatives) if p != selected)})
     modules = set(paths)
     namespaces = {".".join(name.split(".")[:i]) for name in modules for i in range(1, len(name.split(".")))}
     local_names = modules | namespaces
     local_roots = {name.split(".")[0] for name in local_names}
     graph = {name: set() for name in modules}
     records = []
-    issues = []
 
     for name, relative in sorted(paths.items()):
         record = {"module": name, "path": relative, "entrypoint": False, "imports": [], "dynamic_import_lines": []}
@@ -178,9 +193,10 @@ def inspect(root):
 
     issues.sort(key=lambda item: (item["path"], item.get("line") or 0, item["type"], item.get("target", "")))
     edges = [{"from": name, "to": target} for name in sorted(graph) for target in sorted(graph[name])]
-    return {"modules": records, "edges": edges, "cycles": cycles(graph), "issues": issues,
+    cycle_groups = cycles(graph)
+    return {"modules": records, "edges": edges, "cycles": cycle_groups, "issues": issues,
             "summary": {"module_count": len(records), "local_edge_count": len(edges),
-                        "cycle_count": len(cycles(graph)), "issue_count": len(issues),
+                        "cycle_count": len(cycle_groups), "issue_count": len(issues),
                         "entrypoints": [record["module"] for record in records if record["entrypoint"]]}}
 
 

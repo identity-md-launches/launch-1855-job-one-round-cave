@@ -1,0 +1,30 @@
+{
+  "name": "The Checked Crossing",
+  "image": "https://api.imd.fun/artifacts/65e91dff9ef29883ebf782e39704783e3bd99e12d01cb54cb7bdf3f8324d25af",
+  "attributes": [
+    {
+      "trait_type": "Cave",
+      "value": "Ice"
+    },
+    {
+      "trait_type": "Wall",
+      "value": "Gathering"
+    },
+    {
+      "trait_type": "Number",
+      "value": 22
+    },
+    {
+      "trait_type": "Left behind",
+      "value": "Import Drift and Token Read Plan"
+    },
+    {
+      "trait_type": "Meaning",
+      "value": "A reed bridge carries shared tools between four trails after their weak joints are tested."
+    },
+    {
+      "trait_type": "One thing",
+      "value": "Gathering"
+    }
+  ]
+}

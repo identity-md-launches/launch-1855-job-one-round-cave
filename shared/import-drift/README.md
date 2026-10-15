@@ -5,9 +5,10 @@ code. Python 3.9+ and its standard library are sufficient. No installation,
 network, wallet, configuration discovery, or environment-variable access.
 Run from the workspace root; all input paths must resolve inside it.
 
-This joins Line 3's Import Map to Line 2's CSV Reconcile. Their reviewed first
+This joins Line 3's Import Map to Line 2's CSV Reconcile. Their reviewed Step 22
 versions are copied here unchanged as `import_map.py` and `reconcile.py`, so this
-folder can be reused independently. `drift.py` supplies the adapter.
+folder can be reused independently. `drift.py` supplies the adapter. Gathering 22
+brings Line 3's deep-graph fix and Line 2's readable report into this shared tool.
 
 One command to see it working on the actual delivered worker tools:
 
@@ -24,6 +25,14 @@ python3 -B shared/import-drift/drift.py snapshot line-1/tools/endpoint-sentry > 
 # Take another snapshot after the source change, or repeat now to check equality.
 python3 -B shared/import-drift/drift.py snapshot line-1/tools/endpoint-sentry > shared/after.csv
 python3 -B shared/import-drift/drift.py compare shared/before.csv shared/after.csv
+```
+
+Add `--format text` to `compare` for a readable Markdown report. JSON remains the
+default and both formats have the same exit status. For example, this one command
+reviews the retained real Endpoint Sentry snapshot against itself:
+
+```sh
+python3 -B shared/import-drift/drift.py compare shared/import-drift/observed-sentry.csv shared/import-drift/observed-sentry.csv --format text
 ```
 
 Exit codes: snapshot 0 means no reported cycles/issues, 1 means a usable snapshot
@@ -43,13 +52,16 @@ The stderr summary preserves cycle counts; use Import Map's full JSON to inspect
 cycle membership. The adapter does not add cycle membership to CSV rows.
 
 Inherited limits: external imports cannot be proved installed, attribute imports
-are conservative, dynamic targets are not resolved, UTF-8 source is assumed,
-deep graphs can exceed Python recursion limits, and source scanning has no total
-byte/file budget. Compare inputs have the reconciler's 16 MiB/100,000-row limits.
-Scan only trusted, reasonably sized workspace source trees. Module/package name
-collisions in the original mapper can hide a module; this adapter detects them
-before scanning and exits 2. Line 3's next worker should repair the original
-mapper too (see gathering/REPORT.md).
+are conservative, dynamic targets are not resolved, and source scanning has no
+total byte/file budget. UTF-8 source is assumed; a UTF-8 BOM currently produces a
+reported parse error even though Python accepts it, and source encoding cookies
+are not honored. AST parsing still has Python's parser limits. Compare inputs
+have the reconciler's 16 MiB/100,000-row limits. Scan only trusted, reasonably sized
+workspace source trees. Cycle detection now uses an iterative traversal, tested
+on a 5,000-module source chain and cycle. The v1 snapshot still rejects
+module/package name collisions with exit 2: one row per name cannot faithfully
+represent both alternatives. Line 3 now reports collisions and selects the
+regular package; use its complete report when reviewing those alternatives.
 
 Check:
 
@@ -57,7 +69,11 @@ Check:
 python3 -B -m unittest discover -s shared/import-drift -p 'test_*.py' -v
 ```
 
-The checks create fixtures only under `test/scratch/`, scan a file containing a
-deliberate execution trap without executing it, and test dependency changes,
-unchanged line shifts, parse failures, duplicate keys, and workspace/schema
-validation. The gathering run also took and compared real source snapshots.
+All eight checks passed in Gathering 22. They create fixtures only under
+`test/scratch/`, scan a file containing a deliberate execution trap without
+executing it, and test dependency changes, unchanged line shifts, parse failures,
+duplicate keys, workspace/schema validation, collision rejection, deep source
+graphs, and readable comparison exit statuses. The old shared mapper failed a
+1,500-module chain with `maximum recursion depth exceeded`; the upgraded mapper
+handles it. A fresh snapshot of the actual Endpoint Sentry source compared equal
+to `observed-sentry.csv`: two modules, one local edge, no cycles or issues.

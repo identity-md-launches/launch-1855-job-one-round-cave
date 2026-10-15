@@ -1,52 +1,50 @@
-# Gathering 01 — visual review
+# Gathering 22 — visual review
 
-Output: `artifacts/gathering/wall.png`, PNG, 1254 × 1254 pixels, square.
-Thumbnail: `dist/gathering/01.jpg`, JPEG, 512 × 512 pixels, 63,156 bytes.
-The numbered JSON links to the SHA-256 of the actual final PNG bytes.
+Outputs: artifacts/gathering/wall-v2.png and artifacts/gathering/wall.png,
+identical PNG bytes, 1254 × 1254 pixels, square, 2,757,208 bytes each.
+SHA-256: 65e91dff9ef29883ebf782e39704783e3bd99e12d01cb54cb7bdf3f8324d25af.
+Thumbnail: dist/gathering/22.jpg, JPEG, 512 × 512 pixels, 56,966 bytes.
+Record: dist/gathering/22.json, linking to the actual final PNG hash.
 
-Input: the supplied bare Ice cave, also 1254 × 1254, with no previous gathering
-record or gathering wall. Existing line paintings were not edit targets.
-The installed built-in image generation tool edited the bare cave. The completed
-PNG was opened with the image inspection tool before acceptance.
+The edit target was the existing gathering wall from painted record 01,
+retrieved from its artifact URL and verified as SHA-256
+ d17d8d3d59ef990bdad49361e39324734395a0017040d513c3128b26f4b05d03.
+The later records 02–21 are unpainted placeholders, so none replaced the ancestor.
+The existing line paintings were not edited. Record 22 follows the already
+reserved numbers and the four current line records, also numbered 22.
 
-Chosen review: compare the full rendered output with the supplied cave and count
-the visible hands before writing the record. The rough warm rock, left vertical
-crack, upper icicles, torchlight, floor and square framing remain visibly aligned.
-This is a generative edit, so visual alignment is assessed rather than claiming
-pixel-exact background preservation. There were no ancestral gathering marks to
-preserve in this first gathering.
+Chosen review: view the ancestor and completed whole wall, compare composition,
+look for changed ancestral marks, count every visible hand, and check prohibited
+content before accepting. Both images were opened with the image inspection
+tool. The rock, warm torchlight, left crack, icicles, floor, dark edges, square
+framing, large Pepe, four pigment trails and loop remain visibly aligned.
+The only intended addition is a small reed bridge with pebble clusters and
+chalk/ochre tracks in the previously empty rock below the ancestral painting.
+Its strokes are flat and uneven with stone showing through.
 
-Pepe has a wide mouth and heavy-lidded eyes, crouched beside four black, red
-ochre, yellow ochre and chalk trails joining a loop. The added marks look like
-uneven worn pigment on stone. Both visible hands were counted: the upper hand
-has one thumb and four fingers, and the lower hand has one thumb and four
-fingers. No other handprints were added. No letters, numbers, captions, logos,
-signature, watermark, border, real person or political symbol was observed.
+The main figure is the ancestral Pepe: broad mouth and heavy-lidded eyes.
+Counted both visible hands: the upper hand has four fingers and one thumb;
+the lower hand has four fingers and one thumb. No new hands or handprints were
+added. No letters, numbers, captions, signatures, logos, watermarks, frames,
+real people, political symbols, or hateful symbols were observed. The new mark
+is an earth-pigment drawing, not a photographed or three-dimensional object.
 
-Unmet visual requirements: none observed in this review. A human may still
-disagree about stylistic fidelity or the recognizability of the cave figure;
-the structural checks do not certify those judgments.
+Unmet visual requirements observed: none at the composition/visual inspection
+level. Preservation limitation: this is a generative edit, not a pixel-identical
+background operation. Outside a conservative new-mark review rectangle
+(x 470–1000, y 800–1030), mean absolute RGB channel difference from the ancestor
+is 4.4084 on a 0–255 scale; 13.8% of channels differ by more than 8. Therefore
+exact background-pixel preservation is not claimed. No ancestral figure or mark
+was observed erased, relocated, or intentionally redrawn. Human review may
+judge pigment fidelity or preservation more strictly than this inspection.
 
-Prompt used with the built-in image tool:
+The installed built-in imagegen tool produced the painting. Its returned image
+bytes were saved directly to the required workspace output. The existing
+ffmpeg executable made only the requested JPEG and in-memory gallery previews;
+no additional picture files or installed dependencies were added. The gallery
+works without ffmpeg or network for its embedded previews. The PNG is not a
+placeholder, prompt, or URL-only deliverable.
 
-> Edit the supplied bare cave image at artifacts/ice/cave.png (also
-> .imd/reads/artifacts/cave). This is the exact edit target: preserve its 1254 by
-> 1254 square dimensions, warm brown rock, cracks, icicles, torchlight and framing.
-> Add only an ancient cave painting in the open central rock. Main subject:
-> unmistakable Pepe the frog as a simple prehistoric cave figure, broad flat
-> mouth, large heavy-lidded eyes, drawn with uneven worn charcoal and red/yellow
-> ochre and chalk white, bare stone showing through. Pepe is crouching beside
-> four separate small earth-pigment trails which meet into a single woven loop,
-> symbolizing four workers sharing their useful tools. Keep the painting modest
-> so abundant bare cave remains. Show both hands clearly with EXACTLY FIVE
-> digits on EACH hand: four fingers and one thumb, count carefully. No other
-> handprints. All additions must be flat handmade earth pigment,
-> Lascaux/Chauvet feel, never a rendered 3D frog or photograph. No letters,
-> numbers, captions, signatures, logos, watermarks, borders, frames, political
-> symbols or real people. Preserve the original cave image background and all
-> its existing features.
+Final prompt used with the built-in tool:
 
-The JPEG and small gallery previews were derived in memory using this machine's
-installed libgd. No package was installed. The delivered tools and the generated
-self-contained HTML page do not need libgd. Only the required full wall and its
-JPEG were saved as new image files; the gallery embeds its small previews.
+Use case: precise-object-edit. Edit target: the supplied ancestral Ice gathering cave wall at artifacts/gathering/wall.png, exactly 1254 by 1254 pixels. Preserve the entire existing image: same square dimensions, rock grain, cracks, warm torchlight, dark edges, icicles, floor, framing, and especially the ancestral large Pepe frog and all four pigment trails and woven loop. Do not erase, move, redraw, sharpen, clean up or change any existing mark. Add ONLY a modest prehistoric pigment mark in the empty lower central rock below the existing frog and loop, approximately x=480..990 y=840..1020. The new mark is a small uneven reed bridge connecting two clusters of four rough pebbles, with a thin chalk track crossing it and four tiny red/yellow ochre dots near its foot, symbolizing tested tools crossing between four workers. Keep it entirely flat handmade earth pigment, worn charcoal strokes, red and yellow ochre, chalk white, bare stone showing through, like Lascaux or Chauvet. The existing Pepe remains the main figure, unmistakable wide mouth and heavy-lidded eyes. Do not add any extra frog, people, hands or handprints; preserve both existing hands with their five digits each. No letters, numbers, captions, signatures, logos, watermarks, borders, frames, political or hateful symbols. Do not make a photographic or 3D bridge; it is a sparse cave drawing on the wall. Keep everything outside the new modest lower-center mark unchanged. Deliver the complete square wall, not a cropped detail.

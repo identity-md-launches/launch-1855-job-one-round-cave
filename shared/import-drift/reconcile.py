@@ -94,19 +94,68 @@ def reconcile(before, after, keys, ignore=()):
             'added': added, 'removed': removed, 'changed': changed, 'ambiguous': ambiguous}
 
 
+def render_text(result):
+    """Render a compact Markdown report for a worker's terminal handoff."""
+    summary = result['summary']
+    state = 'equal' if result['equal'] else 'different'
+    lines = [f"# CSV reconciliation: {state}", '',
+             f"Keys: {', '.join(result['keys'])}",
+             f"Rows: {summary['before_records']} before, {summary['after_records']} after; "
+             f"{summary['added']} added, {summary['removed']} removed, "
+             f"{summary['changed']} changed, "
+             f"{summary['unchanged_on_common_columns']} unchanged on common columns, "
+             f"{summary['ambiguous_keys']} ambiguous keys.",
+             f"Schema columns added: {', '.join(result['schema']['added_columns']) or 'none'}; "
+             f"removed: {', '.join(result['schema']['removed_columns']) or 'none'}.",
+             f"Comparison complete: {'yes' if result['complete'] else 'no; resolve duplicate keys'}."]
+
+    def value(item):
+        return json.dumps(item, ensure_ascii=False, sort_keys=True)
+
+    sections = (
+        ('Added', result['added']),
+        ('Removed', result['removed']),
+        ('Changed', result['changed']),
+        ('Ambiguous keys', result['ambiguous']),
+    )
+    for title, rows in sections:
+        lines.extend(['', f'## {title}'])
+        if not rows:
+            lines.append('None.')
+            continue
+        for row in rows:
+            key = value(row['key'])
+            if title in ('Added', 'Removed'):
+                lines.append(f"- Key {key}, record {row['record']}: {value(row['values'])}")
+            elif title == 'Changed':
+                delta = ', '.join(
+                    f"{column}: {value(change['before'])} → {value(change['after'])}"
+                    for column, change in row['fields'].items())
+                lines.append(f"- Key {key}: {delta}")
+            else:
+                lines.append(f"- Key {key}: {len(row['before'])} before row(s), "
+                             f"{len(row['after'])} after row(s); no automatic pairing.")
+                lines.append(f"  Before: {value(row['before'])}")
+                lines.append(f"  After: {value(row['after'])}")
+    return '\n'.join(lines)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('before', help='baseline CSV under the current directory')
     parser.add_argument('after', help='candidate CSV under the current directory')
     parser.add_argument('--key', action='append', required=True, help='key column; repeat for a composite key')
     parser.add_argument('--ignore', action='append', default=[], help='non-key column to exclude')
+    parser.add_argument('--format', choices=('json', 'text'), default='json',
+                        help='report format (default: json; text is readable Markdown)')
     args = parser.parse_args(argv)
     try:
         result = reconcile(args.before, args.after, args.key, args.ignore)
     except (InputError, OSError, ValueError) as exc:
         print(json.dumps({'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+    print(render_text(result) if args.format == 'text' else
+          json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0 if result['equal'] else 1
 
 

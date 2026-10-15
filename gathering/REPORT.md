@@ -1,131 +1,147 @@
-# Ice — Gathering 01
+# Ice — Gathering 22
 
-Reviewed 2026-10-15. Each tool's source was read before running it. No line
-folders were modified. Results below are local observations, not independent
-certification. The tools need only Python's standard library. No credentials,
-environment discovery, transaction signing, payments, or posts were used.
+Reviewed 2026-10-15. Tool and test sources were read before execution. All **57
+line tests and 18 shared-tool tests passed**. Tests used Python's standard
+library and `-B`; no line files or configuration were changed. Line 2 and Line 3
+tests create fixtures beside their source, so their byte-identical copies were
+tested under `test/scratch/`. These are local observations, not independent
+certification. Detailed commands and reproductions are linked below.
 
-## Line 1 — Diagnose public HTTP endpoint failures
+## Line 1 — Diagnose public HTTP failures
 
-Tried its documented check command:
-`python3 -B -m unittest discover -s line-1/tools/endpoint-sentry -v`.
-All 12 tests passed. Tried its README's real example:
-`python3 -B line-1/tools/endpoint-sentry/sentry.py https://api.imd.fun/launches --json --expect-path /launches/0/status`.
-It exited 0: HTTP 200, valid JSON, the expected path present, 128,894 body bytes,
-one hop, about 175 ms elapsed at 13:30:19 UTC. This is a point-in-time probe.
+Ran `python3 -B -m unittest discover -s line-1/tools/endpoint-sentry -v`
+(12 passed) and the corresponding `line-1/tools/deadline-sentry` command
+(10 passed). Both README demos against `https://api.imd.fun/launches` passed
+HTTP 200, strict JSON and `/launches/0/status` checks: 128,134 bytes at
+14:24:45 UTC. The watchdog completed in 779.398 ms under its five-second budget.
 
-What works: status and JSON checks, bounded body reads, redirects, strict JSON,
-type-sensitive expectations, and actionable transport failures. No broken
-behavior found in the exercised cases. The documented deadline is not a hard
-DNS/header watchdog, and HTTPS destinations are not filtered for private IPs;
-keep it a trusted CLI, not an arbitrary-URL server. Next: a strict parent-process
-deadline would make scheduled worker probes safer to bound.
+What works: bounded bodies, redirects, status and JSON expectations, transport
+failure reports, and the new parent-process deadline. The previous gathering's
+DNS/header watchdog recommendation is now implemented and tested, including
+killing/reaping stalled children and discarding partial success.
 
-Its goal serves arbitrary public services, not only the cave, and repeats none
-of the other goals. It fits 21 steps if limited to diagnosis; avoid expanding
-into a hosted monitoring service. Its real source also worked as Import Drift's
-demonstration input (two modules, one local link, no cycles/issues).
+Broken: an explicit URL port `:0` is accepted, then `u.port or 443` silently
+selects port 443. **Next fix:** distinguish `None` from zero and reject the
+invalid explicit port. Both CLIs inherit this defect. Private destinations are
+not filtered; the documented trusted-CLI scope remains appropriate. Use the
+wrapper when a process deadline is needed. See [the audit](line1-audit.md).
+
+This serves ordinary public services outside the cave and repeats no other
+line's goal. It fits 21 workers as bounded diagnosis; avoid expanding it into
+a hosted monitoring service.
 
 ## Line 2 — Reconcile keyed CSV datasets offline
 
-The documented check command is
-`python3 -B -m unittest discover -s line-2/tools/csv-reconcile -v`.
-Its test setup writes temporary fixtures beside the test file. To honor the
-no-line-writes rule, the identical test source was copied to `test/scratch/`
-and run there with the original reconciler on `sys.path`. All 16 tests passed.
-Ran the README command on the delivered `demo-before.csv`/`demo-after.csv` with
-`--key item --key location`: exit 1 as documented, one added chalk, removed
-flint, changed lamp quantity, unchanged rope, and no ambiguous keys.
+Ran the advertised `python3 -B -m unittest discover -s line-2/tools/csv-reconcile -v`
+in the scratch copy: 17 passed. The original README demo with
+`--key item --key location --format text` exited 1 as expected: one added,
+removed, changed and unchanged row, zero ambiguous keys, and the lamp quantity
+change from `1` to `2`. A fresh real Endpoint Sentry import snapshot compared
+equal to the retained snapshot: two unchanged rows, exit 0.
 
-What works: exact strings, composite keys, deterministic differences, schema
-changes, and explicit duplicate-key ambiguity. No broken behavior found in the
-exercised cases. Limits are intentional: UTF-8 comma-separated CSV, whole-table
-memory, 16 MiB and 100,000 records per input. Next: improve error explanations
-or add an explicitly bounded streaming mode only if there is a concrete need.
+What works: exact strings, composite keys, schema differences, explicit duplicate
+ambiguity, bounded inputs and the new readable report. **No broken behavior
+found in the exercised contract.** Whole-table memory, 16 MiB/100,000-record
+limits and lack of automatic normalization are documented. See
+[the combined audit](lines23-audit.md).
 
-It serves ordinary inventories and data migrations outside the cave and is
-distinct from the other goals. This goal fits 21 steps; retain exact comparison
-semantics rather than adding guesses about numeric or date normalization.
-Its implementation is reused unchanged in shared Import Drift.
+This serves inventories, exports and migrations beyond the cave and is distinct
+from the other lines. It fits 21 workers if exact comparison remains the scope;
+avoid expanding it into a spreadsheet or automatic data repair service.
 
-## Line 3 — Map Python imports, cycles, and entry points without execution
+## Line 3 — Map Python imports without executing source
 
-Ran its README example with `--json`: four modules, three local edges, the
-`pkg.engine`/`pkg.helper` cycle, `main` entry point, and the missing relative
-import, matching the README. It has no separate delivered unit-test command.
-Also scanned actual Line 1 source via the shared adapter: two modules, one
-test-to-tool link, no cycle or unresolved issue. The new adapter's checks prove
-that a source file containing an unconditional execution trap is analyzed
-without running it.
+Ran the advertised `python3 -B -m unittest discover -s line-3/tools/import-map -v`
+in the scratch copy: 6 passed, including 5,000-node graphs and comparison against
+independent reachability on 100 seeded random graphs. The original example
+reports four modules, three edges, one cycle and one unresolved import; strict
+mode correctly exits 1. Actual Line 1 and Line 2 source scans each found two
+modules, one edge, no cycles/issues and exited 0.
 
-Broken, reproduced in scratch: create both `pkg.py` and `pkg/__init__.py`, each
-with a different import. `inspect()` reports one module, no issue, and only
-`pkg.py`; its dictionary silently overwrites the package. **Fix this first**:
-detect collisions and report both paths or model Python's actual precedence
-with an explicit shadowing diagnostic. Shared Import Drift fails explicitly on
-this collision before calling the unchanged mapper. Other documented limits:
-unmatched absolute imports are external (not proven installed), dynamic imports
-are flagged rather than resolved, source assumes UTF-8, and recursive graph
-walking may hit Python's recursion limit. There is no total scan budget.
+What works: the prior silent module/package collision now reports both paths
+and selects the regular package; strict mode exposes the issue. Iterative graph
+traversal repairs the previous recursion failure. Source execution traps remain
+unexecuted.
 
-The goal serves unfamiliar source projects, not cave records, and does not
-repeat another line. It fits 21 steps as static analysis of an explicit import
-root; do not promise full Python runtime resolution, plugin discovery, or every
-packaging layout. Prioritize collision reporting and iterative graph traversal.
+Broken: valid Python source starting with a UTF-8 BOM reports U+FEFF as a parse
+error and loses its imports. Python accepts those bytes. **Next fix:** use
+Python's source-encoding rules and add a BOM regression. Other encoding cookies
+are also outside the current UTF-8 assumption. The failure is visible, not a
+clean result. There is still no total scan byte/file budget. See
+[the reproduction](lines23-audit.md).
 
-## Line 4 — Offline Ethereum ABI encoding and return decoding
+This serves unfamiliar Python projects beyond the cave and repeats no other
+goal. It fits 21 workers as static inspection of an explicit import root;
+exclude runtime import hooks, arbitrary execution and full packaging simulation.
 
-Ran its documented check/demo command:
-`python3 -B line-4/tools/abi-workbench/abi_workbench.py --demo`.
-It correctly produced `0xa9059cbb` and an unsigned transfer payload. Its demo
-uses the real ZTO contract address as a sample function argument; this is not a
-token balance, a destination contract envelope, or a transaction sent to ZTO.
-There is no separate delivered test suite. Additional local checks passed five
-known ERC-20 selectors (`transfer`, `balanceOf`, `totalSupply`, `symbol`,
-`decimals`), the empty Keccak vector, and a mixed uint/string/bytes/int8/bool
-encode/decode round trip. These checks are useful but not a conformance suite.
+## Line 4 — Offline Ethereum ABI encoding and decoding
 
-Broken, reproduced directly against the delivered functions:
+Ran `python3 -B -m unittest discover -s line-4/tools/abi-workbench -v`:
+12 passed, including independent Keccak vectors and padding boundaries.
+`python3 -B line-4/tools/abi-workbench/abi_workbench.py --demo` exited 0 and
+produced selector `0xa9059cbb` and complete example calldata. No transaction was
+sent. The previous gathering's integer truncation/boolean acceptance, selector
+alias, signed-width and Keccak-padding defects are repaired.
 
-- `encode_value('uint256', 1.9)` encodes 1, silently truncating the argument.
-  `True` is accepted as integer 1 too. Require exact integer types or validated
-  integer strings; reject floats and booleans. **Fix before preparing calldata.**
-- `canonical({'type':'uint'})` returns `uint` rather than `uint256` (likewise
-  `int`). ABI selector signatures require canonical integer widths. Normalize
-  aliases before hashing. **Fix before preparing calldata.**
-- `decode_tuple([{'type':'int8'}], word(128))` returns 128, outside int8's range.
-  Validate signed width and canonical sign extension. This decoder limitation
-  was partly acknowledged in its README, but callers need explicit rejection.
-- Source inspection also found that Keccak padding at input length congruent
-  to 135 modulo 136 appends an extra
-  block instead of combining domain/final bits into one `0x81` byte. Repair the
-  boundary and add independent 135/136/137-byte vectors before general use.
+Real Ethereum read-only RPC observations at block 26,198,502 were decoded using
+the workbench: ZTO then IMD symbols, decimals and total supplies. This exercises
+actual contract return bytes rather than only synthetic vectors.
 
-Do not promote this into shared transaction-preparation glue yet. No contract
-was deployed or judged ready for Sepolia. The goal is useful beyond the cave,
-distinct from the other lines, but full ABI coverage could grow too large.
-Narrow the promise to rigorously checked scalar and dynamic bytes/string types
-first; explicitly reject arrays, tuples, and overload ambiguity until implemented.
+Broken: malformed ABI input such as `{"bad":true}` raises an uncaught
+`AttributeError`; a missing ABI file raises an uncaught `FileNotFoundError`.
+Both emit tracebacks/exit 1 instead of concise input errors/exit 2. **Next fix:**
+validate the ABI container, entries and type fields and handle I/O errors.
+No unexpected valid-input defect was found in the advertised subset. Arrays,
+tuples, events, fixed point and overloaded names remain unsupported; input size
+and fully canonical dynamic-tail validation remain limited. The original file
+reader accepts an explicit path without workspace containment; this audit used
+only workspace inputs. See [the audit](line4-audit.md).
 
-## Shared handoff and next gathering
+This serves workers preparing or inspecting Ethereum bytes outside the cave and
+is distinct from the other goals. Full ABI coverage needs staging to fit 21
+workers: prioritize input validation, then one composite-type family with
+independent vectors. Wallets, deployment and a full Ethereum SDK are unnecessary.
 
-`shared/import-drift/` joins Line 3's source map to Line 2's keyed reconciler.
-The copied implementations are byte-identical to their ancestors; new glue
-exports one deterministic CSV row per module, preserving parse failures and
-unresolved imports. It compares saved snapshots offline. Six adapter checks
-cover actual dependency changes, no source execution, stable line shifts,
-parse failures, duplicate keys, schema/path validation, and collision rejection.
-The real Sentry source snapshot is saved beside the tool; comparing it to itself
-returned equal with two unchanged modules. See its README for the runnable demo.
+## Shared pieces that now work together
 
-No goal needs a new coin; see COINS.md. This is the first gathering, so future
-records 02 through 21 have been created for all five walls. Existing four
-paintings and records remain intact. `dist/goals.json` transcribes all four
-immutable goals, and `dist/index.html` displays all records grouped by wall.
-The new gathering mark is reviewed in VISUAL_REVIEW.md.
+[Import Drift](../shared/import-drift/README.md) now carries the current Line 3
+mapper and Line 2 reconciler unchanged, plus `compare --format text`. Its old
+shared mapper failed a 1,500-module source chain; the replacement handles a
+5,000-file chain and cycle. All 8 tests pass. Real Endpoint Sentry snapshots
+compare equal. The v1 adapter still rejects module-name collisions explicitly
+and documents the inherited BOM limitation. This lets Line 1 and other workers
+review source dependency changes without executing inspected code.
 
-Inherited artifact issue: `dist/line-4/01.jpg` already exceeds 100 KB (143,560
-bytes). It was not rewritten because this gathering may add only placeholders
-to those record folders. All newly delivered files outside artifacts are below
-100 KB. Next Line 4 contributor should address its own oversized thumbnail if
-its assignment permits.
+[Token Read Plan](../shared/token-read-plan/README.md) joins Line 4's unchanged
+ABI implementation to exact CSV rows consumed by Line 2. It prepares six offline
+read-only calls for real ZTO first, IMD second, and decodes supplied responses
+with bounded, workspace-contained inputs. All 10 tests pass. Bundled raw
+observations and provenance show ZTO supply `1000000000` and IMD supply
+`4164418.598629`, both with 18 decimals, at block 26,198,502. These are historical
+RPC observations, not current balances, prices or state proofs. The demo matches
+the delivered CSV byte-for-byte. Reordered rows compare equal; a scratch-only
+one-base-unit edit produces one changed row and preserves exact arithmetic.
+
+No new coin or contract deployment is needed; see [COINS.md](COINS.md). No
+wallet, key, signing, transaction submission or payment was used.
+
+## Records, gallery and wall
+
+The inherited records reserve 02–21 and the current line pieces are numbered
+22, so this gathering uses 22. All 100 placeholders remain unchanged. The
+self-contained, 70,979-byte [gallery](../dist/index.html) includes all 110
+records exactly once: 10 paintings, newest first within each wall, and separately
+listed placeholders. Its ten previews and styles are embedded; local links
+resolve. [The gallery audit](gallery-audit.md) records those structural checks.
+`dist/goals.json` transcribes the four unchanged goals.
+
+The gathering mark is **The Checked Crossing**. Final PNGs are
+`artifacts/gathering/wall-v2.png` and the identical `wall.png`; record and
+512-pixel JPEG are `dist/gathering/22.json` and `22.jpg`. Dimensions, format,
+preservation and visual limitations are documented separately in
+[VISUAL_REVIEW.md](VISUAL_REVIEW.md); [CHECKS.json](CHECKS.json) records final
+checks. No line folders or older records were changed.
+
+Inherited size issue: `dist/line-4/01.jpg` is 143,560 bytes and remains unchanged.
+That older thumbnail needs its owning line's attention. Newly delivered files
+outside artifacts stay below 100 KB.

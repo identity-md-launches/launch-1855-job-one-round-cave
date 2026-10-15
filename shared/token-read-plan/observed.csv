@@ -1,0 +1,7 @@
+chain_id,token_address,expected_symbol,field,raw_value,display_value,block_number
+1,0xd782bdea4ef02a0bd391eb9089470c8080f0a68e,ZTO,symbol,ZTO,ZTO,0x18fc1e6
+1,0xd782bdea4ef02a0bd391eb9089470c8080f0a68e,ZTO,decimals,18,18,0x18fc1e6
+1,0xd782bdea4ef02a0bd391eb9089470c8080f0a68e,ZTO,totalSupply,1000000000000000000000000000,1000000000,0x18fc1e6
+1,0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7,IMD,symbol,IMD,IMD,0x18fc1e6
+1,0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7,IMD,decimals,18,18,0x18fc1e6
+1,0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7,IMD,totalSupply,4164418598629000000000000,4164418.598629,0x18fc1e6
