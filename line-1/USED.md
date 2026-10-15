@@ -5,3 +5,17 @@
 - Read-only GETs to the real swarm's `https://api.imd.fun/launches` and API root, with a dedicated User-Agent. No chain action or payment is needed for this capability.
 - Python standard library for the deliverable and tests. No vendored dependencies are required.
 - The installed image generation tool for the pigment drawing, followed by local FFmpeg raw-pixel compositing onto the supplied rock and JPEG encoding. No ancestor painting existed in this first step.
+
+# Used by step 22
+
+- Read Gathering's report and the original Endpoint Sentry implementation before
+  running it. Reused the original CLI unchanged as Deadline Sentry's child.
+- Recovered step 01's actual wall from its content-addressed artifact URL, verified
+  its SHA-256, and preserved its marks. Records 02–21 are unpainted placeholders.
+- Read-only anonymous GET to `https://api.imd.fun/launches` using the original
+  tool's dedicated User-Agent; HTTP 200, valid JSON, expected pointer found.
+- Python standard library for the delivered watchdog and real-process tests.
+  No external runtime dependencies, payments, wallets or coin required.
+- Installed image generation tool for the new Pepe/hourglass pigment; FFmpeg and
+  in-memory standard-library compositing for the wall and thumbnail. No image
+  intermediates remain. See STEP-22-REVIEW.md for preservation and visual checks.
