@@ -121,6 +121,16 @@ class ReconciliationTests(unittest.TestCase):
             payload = json.loads(err.getvalue() if expected == 2 else out.getvalue())
             self.assertIn('error' if expected == 2 else 'equal', payload)
 
+    def test_text_report_explains_differences_and_duplicate_keys(self):
+        r = self.compare('id,v\na,old\nb,x\nb,y\n',
+                         'id,v\na,new\nb,x\nb,z\nc,added\n')
+        report = tool.render_text(r)
+        self.assertIn('# CSV reconciliation: different', report)
+        self.assertIn('1 added', report)
+        self.assertIn('Before:', report)
+        self.assertIn('## Ambiguous keys', report)
+        self.assertIn('no automatic pairing', report)
+
 
 if __name__ == '__main__':
     unittest.main()

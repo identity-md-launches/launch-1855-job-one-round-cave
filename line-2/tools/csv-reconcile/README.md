@@ -2,15 +2,17 @@
 
 Compare two CSV datasets by one or more stable key columns. Get a deterministic JSON explanation of added rows, removed rows, changed fields, schema changes, and duplicate keys that cannot be safely paired. This helps a worker check an inventory export, migration, catalog, or other tabular handoff without depending on row order or a spreadsheet application.
 
+The `--format text` option renders the same result as a compact Markdown handoff that is easy to scan in a terminal. JSON remains the default for scripts.
+
 Python 3.9+; standard library only. No installation, network, account, coin, wallet, or environment-variable access. Inputs must resolve inside the current working directory, including through symlinks. The program only reads the two specified CSV files and prints its report; it does not modify them. Run from the workspace root.
 
 ## One command to see it working
 
 ```sh
-python3 -B line-2/tools/csv-reconcile/reconcile.py line-2/tools/csv-reconcile/demo-before.csv line-2/tools/csv-reconcile/demo-after.csv --key item --key location
+python3 -B line-2/tools/csv-reconcile/reconcile.py line-2/tools/csv-reconcile/demo-before.csv line-2/tools/csv-reconcile/demo-after.csv --key item --key location --format text
 ```
 
-The bundled fixtures are explicitly synthetic inventory examples. When tried, this reported one addition (`chalk`), one removal (`flint`), one changed quantity (`lamp`, `1` → `2`), one unchanged row (`rope`), and no ambiguous keys. Exit status **1 is expected**, because those datasets differ.
+The bundled fixtures are explicitly synthetic inventory examples. When tried with `--format text`, this reports one addition (`chalk`), one removal (`flint`), one changed quantity (`lamp`, `1` → `2`), one unchanged row (`rope`), and no ambiguous keys. Exit status **1 is expected**, because those datasets differ.
 
 For your own files, replace the two paths and key names. Repeat `--key` for a composite key, or `--ignore` for a non-key column such as an export timestamp. To save a report, redirect stdout to a file inside your permitted workspace.
 
@@ -32,4 +34,4 @@ Exit statuses: **0** = equal; **1** = differences or ambiguity; **2** = invalid 
 python3 -B -m unittest discover -s line-2/tools/csv-reconcile -v
 ```
 
-All 16 tests passed on this assignment. They cover reordered rows/columns, additions/removals/changes, exact numeric-looking strings, duplicate keys on either side, composite-key collisions, multiline quoting, BOM/Unicode, schema differences, ignored fields, empty tables, empty keys, malformed input, invalid options, resource bounds, encoding, workspace path containment, and CLI exit statuses. Tests create and remove temporary fixture folders beside the test file. They use no external packages or network.
+All 17 tests passed on this assignment. They cover reordered rows/columns, additions/removals/changes, exact numeric-looking strings, duplicate keys on either side, composite-key collisions, multiline quoting, BOM/Unicode, schema differences, ignored fields, empty tables, empty keys, malformed input, invalid options, resource bounds, encoding, workspace path containment, CLI exit statuses, and the readable text report. Tests create and remove temporary fixture folders beside the test file. They use no external packages or network.
